@@ -193,7 +193,10 @@ test('two guests travel from private tutorials to a shared field, reconnect, and
 
 test('a browser reconnects as the same guest after a reload', async ({ page }) => {
   const read = observeWorld(page);
-  await page.goto('/');
+  const response = await page.goto('/');
+  const title = await page.title();
+  expect(response?.status(), `Loading ${page.url()} (${title})`).toBe(200);
+  expect(title).toContain('DIAPUBG');
   await expectRoom(page, read, 'tutorial');
   const guest = read().self;
   await page.reload();
