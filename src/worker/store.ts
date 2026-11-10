@@ -46,6 +46,9 @@ export class WorldStore {
         run_id TEXT NOT NULL,
         PRIMARY KEY (guest_id, run_id)
       );
+      CREATE TABLE IF NOT EXISTS extraction_log_outbox (
+        run_id TEXT PRIMARY KEY
+      );
       CREATE TABLE IF NOT EXISTS daily_budget (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         day_start INTEGER NOT NULL,
@@ -102,11 +105,24 @@ export class WorldStore {
           UPDATE guests SET parts = parts + ?, rations = rations + ?, meds = meds + ?
           WHERE id = ?
         `, bag.parts, bag.rations, bag.meds, id);
+        this.sql.exec("INSERT INTO extraction_log_outbox (run_id) VALUES (?)", runId);
       }
       const guest = this.guest(id);
       if (!guest) throw new Error("Missing guest for banked supplies");
       return profileFrom(guest).stash;
     });
+  }
+
+  hasPendingExtractionLogs(): boolean {
+    return this.sql.exec("SELECT 1 FROM extraction_log_outbox LIMIT 1").toArray().length > 0;
+  }
+
+  flushExtractionLogs(record: (runId: string) => void): void {
+    const events = this.sql.exec<{ run_id: string }>("SELECT run_id FROM extraction_log_outbox").toArray();
+    for (const { run_id } of events) {
+      record(run_id);
+      this.sql.exec("DELETE FROM extraction_log_outbox WHERE run_id = ?", run_id);
+    }
   }
 
   reservations(): Reservation[] {

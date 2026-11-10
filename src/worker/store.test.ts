@@ -37,7 +37,7 @@ describe("world SQLite persistence", () => {
 
   afterEach(() => db.close());
 
-  it("persists tutorial completion and banks each extraction exactly once across restarts", () => {
+  it("persists tutorial completion, supplies, and extraction logs across restarts", () => {
     store.createGuest("guest-a", "opaque-hash", 10_000);
     store.completeTutorial("guest-a");
     const bag = { parts: 2, rations: 1, meds: 0 };
@@ -52,6 +52,13 @@ describe("world SQLite persistence", () => {
     expect(guest && profileFrom(guest)).toEqual({
       tutorialDone: true, stash: { parts: 2, rations: 1, meds: 3 },
     });
+
+    const recorded: string[] = [];
+    expect(restored.hasPendingExtractionLogs()).toBe(true);
+    restored.flushExtractionLogs(runId => recorded.push(runId));
+    expect(recorded.sort()).toEqual(["run-1", "run-2"]);
+    expect(restored.bank("guest-a", "run-1", bag)).toEqual({ parts: 2, rations: 1, meds: 3 });
+    expect(restored.hasPendingExtractionLogs()).toBe(false);
   });
 
   it("keeps a reserved guest profile through expiry and purges it after release", () => {
