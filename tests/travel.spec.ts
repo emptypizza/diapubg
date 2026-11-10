@@ -45,14 +45,20 @@ async function walk(page: Page, read: ReadWorld, destination: Point) {
     const startSequence = read.lastInput()?.seq ?? 0;
     for (const key of keys) await page.keyboard.down(key);
     try {
+      await expect.poll(() => {
+        const input = read.lastInput();
+        return Boolean(input && input.seq > startSequence && (input.dx || input.dy));
+      }, { intervals: [25, 50], timeout: 2500 }).toBe(true);
       // Use a bounded key hold so a delayed snapshot cannot cause a full RTT of overshoot.
-      await page.waitForTimeout(Math.max(125, Math.min(1100, length * 5)));
+      await page.waitForTimeout(Math.max(25, Math.min(1000, length * 5 - 100)));
     } finally {
       for (const key of keys) await page.keyboard.up(key);
     }
+    let stopSequence: number | undefined;
     await expect.poll(() => {
       const input = read.lastInput();
-      return Boolean(input && input.seq > startSequence && !input.dx && !input.dy && read().ack >= input.seq);
+      if (input && input.seq > startSequence && !input.dx && !input.dy) stopSequence ??= input.seq;
+      return stopSequence !== undefined && read().ack >= stopSequence;
     }, { intervals: [25, 50, 100], timeout: 5000 }).toBe(true);
   }
   throw new Error(`Could not reach ${destination.x},${destination.y} in ${read().room}`);
@@ -154,7 +160,8 @@ test('two guests travel from private tutorials to a shared field, reconnect, and
     await expect.poll(() => readB().players.map(player => player.id)).toContain(idA);
     await expect.poll(() => readA().online).toBeGreaterThanOrEqual(2);
 
-    await Promise.all([enterField(a, readA), enterField(b, readB)]);
+    await enterField(a, readA);
+    await enterField(b, readB);
     await expect.poll(() => readA().players.map(player => player.id)).toContain(idB);
 
     await walk(a, readA, MAPS.field.loot[0]);
