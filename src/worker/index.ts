@@ -125,9 +125,26 @@ export class GameWorld extends DurableObject<Env> {
     this.world = new World({
       completeTutorial: id => this.store.completeTutorial(id),
       bank: (id, runId, bag) => this.store.bank(id, runId, bag),
-      record: event => metric(event),
+      record: event => {
+        if (event === "extracted") void this.scheduleExtractionLogs();
+        else metric(event);
+      },
     });
     this.restoreConnections(Date.now());
+    if (this.store.hasPendingExtractionLogs()) void this.scheduleExtractionLogs();
+  }
+
+  alarm(): void {
+    this.store.flushExtractionLogs(runId => metric("extracted", { runId }));
+  }
+
+  private async scheduleExtractionLogs(): Promise<void> {
+    try {
+      // An alarm gives Workers Logs an invocation for events committed by the simulation timer.
+      if (await this.ctx.storage.getAlarm() === null) await this.ctx.storage.setAlarm(Date.now());
+    } catch {
+      console.error({ component: "world", event: "extraction_log_schedule_failed" });
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
