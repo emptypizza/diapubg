@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# PPI
+.DS_Store
+.idea/
+.vscode/
+dist/
+.vercel
