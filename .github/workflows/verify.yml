@@ -28,5 +28,14 @@ jobs:
       - run: npm install --global pnpm@11.25.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - name: Prepare Chromium
+        run: |
+          if browser_path=$(command -v google-chrome); then
+            printf 'DIAPUBG_CHROME=%s\n' "$browser_path" >> "$GITHUB_ENV"
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
+      - if: ${{ !inputs.url }}
+        run: pnpm test:e2e
+      - if: ${{ inputs.url }}
+        run: pnpm test:e2e --grep "reconnects as the same guest"
