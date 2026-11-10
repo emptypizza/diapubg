@@ -72,6 +72,10 @@ web_modules/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
+.wrangler/
+.dev.vars*
+playwright-report/
+test-results/
 .parcel-cache
 
 # Next.js build output
@@ -147,3 +151,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# PPI
+.DS_Store
+.idea/
+.vscode/
+dist/
+.vercel

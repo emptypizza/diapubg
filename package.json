@@ -1,0 +1,25 @@
+{
+  "name": "diapubg",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "dev": "vite build && wrangler dev --ip 127.0.0.1 --port 8787",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit && vitest run && vite build",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "deploy": "tsc --noEmit && vite build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261107.1",
+    "@playwright/test": "1.59.1",
+    "@types/node": "24.10.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0",
+    "wrangler": "4.158.0"
+  }
+}
